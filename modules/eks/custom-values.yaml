@@ -3,8 +3,8 @@
 
 global:
   # Using nip.io with your AWS LoadBalancer hostname (dots converted to dashes)
-  domain: "a894199a15e2a4daa818341e617617b2-586949492-us-east-1-elb-amazonaws-com.nip.io"
-  
+  domain: "a894199a15e2a4daa818341e617617b2-586949492.us-east-1.elb.amazonaws.com"
+
   # HTTP mode (not HTTPS)
   useHttps: false
 
