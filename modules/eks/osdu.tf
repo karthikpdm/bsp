@@ -252,8 +252,9 @@ resource "helm_release" "osdu_baremetal" {
   wait       = true
 
   # This reads your custom-values.yaml file
+  # Use the custom-values.yaml file from the same directory as this tf file
   values = [
-    file(var.custom_values_file_path)
+    file("${path.module}/custom-values.yaml")
   ]
 
   depends_on = [
