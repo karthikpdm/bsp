@@ -206,32 +206,61 @@ resource "helm_release" "istiod" {
 # STEP 4: Install Istio Ingress Gateway (FIXED VERSION)
 #########################################################################
 
+resource "kubernetes_namespace" "istio_gateway" {
+  metadata {
+    name = "istio-gateway"
+    labels = {
+      istio-injection = "enabled"
+    }
+  }
 
-resource "helm_release" "istio-ingress" {
+  depends_on = [aws_eks_node_group.node-grp]
+}
+
+#######################################################################################################
+
+resource "helm_release" "istio_ingress" {
   name             = "istio-ingress"
-  namespace        = "istio-ingress"
-  create_namespace = true
   repository       = "https://istio-release.storage.googleapis.com/charts"
   chart            = "gateway"
+  namespace        = kubernetes_namespace.istio_gateway.metadata.0.name
   version          = "1.25.0"
-
+  timeout          = 500  #1200
   force_update  = true
   recreate_pods = true
   description   = "force update 1"
+
+  set {
+    name  = "labels.istio"
+    value = "ingressgateway"
+  }
+
   set {
     name  = "service.type"
     value = "LoadBalancer"
   }
+
   set {
     name  = "service.externalTrafficPolicy"
     value = "Local"
   }
   
 
-  timeout = 1200
+#   timeout = 1200
   wait    = true
+
   depends_on = [
     helm_release.istio_base,
     helm_release.istiod,
   ]
+}
+
+#########################################################################################################
+
+data "kubernetes_service" "istio_ingress" {
+  metadata {
+    name      = "istio-ingress"
+    namespace = kubernetes_namespace.istio_gateway.metadata.0.name
+  }
+  depends_on = [helm_release.istio_ingress]
 }
