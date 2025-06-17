@@ -257,10 +257,10 @@ resource "helm_release" "istio_ingress" {
 
 #########################################################################################################
 
-data "kubernetes_service" "istio_ingress" {
-  metadata {
-    name      = "istio-ingress"
-    namespace = kubernetes_namespace.istio_gateway.metadata.0.name
-  }
-  depends_on = [helm_release.istio_ingress]
-}
+# data "kubernetes_service" "istio_ingress" {
+#   metadata {
+#     name      = "istio-ingress"
+#     namespace = kubernetes_namespace.istio_gateway.metadata.0.name
+#   }
+#   depends_on = [helm_release.istio_ingress]
+# }
