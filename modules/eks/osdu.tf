@@ -223,3 +223,40 @@
 
 # #   depends_on = [helm_release.osdu]
 # # }
+
+
+
+
+
+
+
+# Get Istio LoadBalancer information
+data "kubernetes_service" "istio_ingress" {
+  metadata {
+    name      = "istio-ingress"
+    namespace = "istio-gateway"
+  }
+}
+
+locals {
+  istio_hostname = try(data.kubernetes_service.istio_ingress.status.0.load_balancer.0.ingress.0.hostname, "")
+}
+
+# OSDU Baremetal Helm Installation
+resource "helm_release" "osdu_baremetal" {
+  name       = "osdu-baremetal"
+  repository = "oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/infra-gcp-provisioning/gc-helm"
+  chart      = "osdu-gc-baremetal"
+  namespace  = "default"
+  timeout    = 1800  # 30 minutes
+  wait       = true
+
+  # This reads your custom-values.yaml file
+  values = [
+    file(var.custom_values_file_path)
+  ]
+
+  depends_on = [
+    data.kubernetes_service.istio_ingress
+  ]
+}

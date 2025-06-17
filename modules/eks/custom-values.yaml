@@ -1,0 +1,61 @@
+# custom-values.yaml
+# This file should be placed in the same directory as your osdu-helm.tf file
+
+global:
+  # Using nip.io with your AWS LoadBalancer hostname (dots converted to dashes)
+  domain: "a894199a15e2a4daa818341e617617b2-586949492-us-east-1-elb-amazonaws-com.nip.io"
+  
+  # HTTP mode (not HTTPS)
+  useHttps: false
+
+keycloak:
+  auth:
+    # Keycloak admin password (min 8 chars, alphanumeric only)
+    adminPassword: "KeycloakAdmin123"
+  
+  # HTTP mode setting
+  proxy: none
+
+minio:
+  auth:
+    # MinIO root password (min 8 chars, alphanumeric only)
+    rootPassword: "MinioRoot123"
+  persistence:
+    size: 40Gi
+  # Uncomment the line below if you face connectivity issues
+  #useInternalServerUrl: true
+
+postgresql:
+  global:
+    postgresql:
+      auth:
+        # PostgreSQL password (min 8 chars, alphanumeric only)
+        postgresPassword: "PostgresDB123"
+  primary:
+    persistence:
+      size: 8Gi
+    resourcesPreset: "medium"
+
+airflow:
+  externalDatabase:
+    # Airflow database password (min 8 chars, alphanumeric only)
+    password: "AirflowDB123"
+  auth:
+    # Airflow admin password (min 8 chars, alphanumeric only)
+    password: "AirflowAdmin123"
+
+elasticsearch:
+  security:
+    # Elasticsearch password (min 8 chars, alphanumeric only)
+    elasticPassword: "ElasticSearch123"
+  master:
+    persistence:
+      size: 8Gi
+  data:
+    persistence:
+      size: 8Gi
+
+rabbitmq:
+  auth:
+    # RabbitMQ password (min 8 chars, alphanumeric only)
+    password: "RabbitMQ123"
