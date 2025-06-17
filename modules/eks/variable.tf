@@ -63,5 +63,5 @@ variable "istio_version" {
 variable "custom_values_file_path" {
   description = "Path to the custom-values.yaml file"
   type        = string
-  default     = "./custom-values.yaml"
+  default     = "../../custom-values.yaml"  # This looks in the root directory
 }
