@@ -55,3 +55,13 @@ variable "istio_version" {
   description = "The version of the istio"
   type        = string
 }
+
+
+
+
+# Variables
+variable "custom_values_file_path" {
+  description = "Path to the custom-values.yaml file"
+  type        = string
+  default     = "./custom-values.yaml"
+}

@@ -29,6 +29,38 @@ output "eks_cluster_oidc_issuer" {
 
 
 
+
+# Outputs to help you after installation
+output "istio_load_balancer_hostname" {
+  description = "Your AWS Load Balancer hostname"
+  value       = local.istio_hostname
+}
+
+output "installation_info" {
+  description = "Important installation information"
+  value = <<-EOT
+    =====================================================
+    OSDU Baremetal Installation Completed (HTTP Mode)
+    =====================================================
+    
+    Your LoadBalancer hostname: ${local.istio_hostname}
+    
+    If you used your own domain in custom-values.yaml:
+    - Access OSDU at: http://osdu.your-domain.com
+    - Access Keycloak at: http://keycloak.your-domain.com/admin
+    - Access Airflow at: http://airflow.your-domain.com
+    - Access MinIO at: http://minio.your-domain.com
+    
+    If you used nip.io domain:
+    - Access OSDU at: http://osdu.${replace(local.istio_hostname, ".", "-")}.nip.io
+    
+    Wait 10-15 minutes for all services to start up.
+    Check status with: kubectl get pods
+  EOT
+}
+
+
+
 #########################################################################
 # OUTPUTS
 #########################################################################
