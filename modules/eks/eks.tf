@@ -173,6 +173,79 @@ resource "aws_eks_addon" "kube-proxy" {
 
 ###########################################################################################################
 
+
+##########################################################################################################
+
+# IAM Role for EBS CSI Driver
+resource "aws_iam_role" "ebs_csi_driver_role" {
+  name = "bsp-eks-ebs-csi-driver-role-${var.env}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.eks.arn
+        }
+        Condition = {
+          StringEquals = {
+            "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+            "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+# Attach the Amazon EBS CSI Driver policy to the role
+resource "aws_iam_role_policy_attachment" "ebs_csi_driver_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/Amazon_EBS_CSI_Driver"
+  role       = aws_iam_role.ebs_csi_driver_role.name
+}
+
+###########################################################################################################
+
+# EBS CSI Driver Add-on
+data "aws_eks_addon_version" "ebs-csi-default" {
+  addon_name         = "aws-ebs-csi-driver"
+  kubernetes_version = aws_eks_cluster.eks.version
+}
+
+resource "aws_eks_addon" "ebs-csi" {
+  addon_name               = "aws-ebs-csi-driver"
+  addon_version            = data.aws_eks_addon_version.ebs-csi-default.version
+  cluster_name             = aws_eks_cluster.eks.name
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+  service_account_role_arn = aws_iam_role.ebs_csi_driver_role.arn
+
+  configuration_values = jsonencode({
+    controller = {
+      tolerations = [
+        {
+          key      = "CriticalAddonsOnly"
+          operator = "Exists"
+        }
+      ]
+    }
+  })
+
+  depends_on = [
+    aws_eks_cluster.eks,
+    aws_eks_node_group.node-grp,
+    aws_iam_openid_connect_provider.eks,
+    aws_iam_role_policy_attachment.ebs_csi_driver_policy
+  ]
+
+  tags = var.tags
+}
+
+###########################################################################################################
 data "aws_eks_addon_version" "coredns-default" {
   addon_name         = "coredns"
   kubernetes_version = aws_eks_cluster.eks.version
