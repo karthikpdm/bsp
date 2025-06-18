@@ -174,7 +174,7 @@ resource "aws_eks_addon" "kube-proxy" {
 ###########################################################################################################
 
 
-##########################################################################################################
+###########################################################################################################
 
 # IAM Role for EBS CSI Driver
 resource "aws_iam_role" "ebs_csi_driver_role" {
@@ -202,9 +202,103 @@ resource "aws_iam_role" "ebs_csi_driver_role" {
   tags = var.tags
 }
 
-# Attach the Amazon EBS CSI Driver policy to the role
+# Custom IAM Policy for EBS CSI Driver (more reliable than AWS managed policy)
+resource "aws_iam_policy" "ebs_csi_driver_policy" {
+  name        = "bsp-eks-ebs-csi-driver-policy-${var.env}"
+  description = "IAM policy for EBS CSI driver"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateSnapshot",
+          "ec2:AttachVolume",
+          "ec2:DetachVolume",
+          "ec2:ModifyVolume",
+          "ec2:DescribeAvailabilityZones",
+          "ec2:DescribeInstances",
+          "ec2:DescribeSnapshots",
+          "ec2:DescribeTags",
+          "ec2:DescribeVolumes",
+          "ec2:DescribeVolumesModifications"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateTags"
+        ]
+        Resource = [
+          "arn:aws:ec2:*:*:volume/*",
+          "arn:aws:ec2:*:*:snapshot/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "ec2:CreateAction" = [
+              "CreateVolume",
+              "CreateSnapshot"
+            ]
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DeleteTags"
+        ]
+        Resource = [
+          "arn:aws:ec2:*:*:volume/*",
+          "arn:aws:ec2:*:*:snapshot/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateVolume"
+        ]
+        Resource = "*"
+        Condition = {
+          StringLike = {
+            "aws:RequestedRegion" = "*"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DeleteVolume"
+        ]
+        Resource = "*"
+        Condition = {
+          StringLike = {
+            "ec2:ResourceTag/ebs.csi.aws.com/cluster" = "true"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DeleteSnapshot"
+        ]
+        Resource = "*"
+        Condition = {
+          StringLike = {
+            "ec2:ResourceTag/CSIVolumeSnapshotName" = "*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+# Attach the custom EBS CSI Driver policy to the role
 resource "aws_iam_role_policy_attachment" "ebs_csi_driver_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/service-role/Amazon_EBS_CSI_Driver"
+  policy_arn = aws_iam_policy.ebs_csi_driver_policy.arn
   role       = aws_iam_role.ebs_csi_driver_role.name
 }
 
@@ -245,6 +339,7 @@ resource "aws_eks_addon" "ebs-csi" {
   tags = var.tags
 }
 
+###########################################################################################################
 ###########################################################################################################
 data "aws_eks_addon_version" "coredns-default" {
   addon_name         = "coredns"
