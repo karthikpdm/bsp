@@ -1,6 +1,10 @@
 
 #####################   eks   ############################
 
+variable "region" {
+  description = "region"
+  type        = string
+}
 
 variable "env" {
   description = "The environment for the infrastructure (e.g., dev, qa, prod)"
@@ -33,19 +37,112 @@ variable "eks_master_sg_id" {
 #####################   worker node   ############################
 
 
-variable "instance_type" {
-  description = "EC2 instance type for worker nodes"
-  type        = string
-}
+# variable "instance_type" {
+#   description = "EC2 instance type for worker nodes"
+#   type        = string
+# }
 
-variable "disk_size" {
-  description = "EBS volume size in GB"
-  type        = number
-}
+# variable "disk_size" {
+#   description = "EBS volume size in GB"
+#   type        = number
+# }
 
 variable "worker_role_arn" {
   description = "IAM role ARN for EKS worker nodes"
   type        = string
+}
+
+
+#########################################################################
+# REQUIRED VARIABLES
+#########################################################################
+# Add these to your variables.tf file:
+
+# Instance types for different node groups
+variable "istio_instance_type" {
+  description = "Instance type for Istio nodes"
+  type        = string
+  default     = "t3.large"
+}
+
+variable "backend_instance_type" {
+  description = "Instance type for backend database nodes"
+  type        = string
+  default     = "m5.2xlarge"
+}
+
+variable "frontend_instance_type" {
+  description = "Instance type for frontend microservice nodes"
+  type        = string
+  default     = "m5.xlarge"
+}
+
+# Disk sizes for different node groups
+variable "istio_disk_size" {
+  description = "Root disk size for Istio nodes in GB"
+  type        = number
+  default     = 80
+}
+
+variable "backend_disk_size" {
+  description = "Root disk size for backend nodes in GB"
+  type        = number
+  default     = 200
+}
+
+variable "backend_data_disk_size" {
+  description = "Additional data disk size for backend nodes in GB"
+  type        = number
+  default     = 500
+}
+
+variable "frontend_disk_size" {
+  description = "Root disk size for frontend nodes in GB"
+  type        = number
+  default     = 150
+}
+
+# Node group scaling configurations
+variable "istio_node_config" {
+  description = "Scaling configuration for Istio node group"
+  type = object({
+    desired_size = number
+    max_size     = number
+    min_size     = number
+  })
+  default = {
+    desired_size = 2
+    max_size     = 4
+    min_size     = 1
+  }
+}
+
+variable "backend_node_config" {
+  description = "Scaling configuration for backend node group"
+  type = object({
+    desired_size = number
+    max_size     = number
+    min_size     = number
+  })
+  default = {
+    desired_size = 3
+    max_size     = 5
+    min_size     = 2
+  }
+}
+
+variable "frontend_node_config" {
+  description = "Scaling configuration for frontend node group"
+  type = object({
+    desired_size = number
+    max_size     = number
+    min_size     = number
+  })
+  default = {
+    desired_size = 4
+    max_size     = 8
+    min_size     = 2
+  }
 }
 
 #####################   istio   ############################

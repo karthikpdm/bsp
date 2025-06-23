@@ -1,0 +1,70 @@
+#  Copyright 2023 Google LLC
+#  Copyright 2023 EPAM
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+{{- if .Values.airflow.enabled }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: "airflow-gateway"
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  {{- if .Values.global.useHttps }}
+    - port:
+        name: https
+        number: 443
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: {{ .Values.domain.tls.airflowCredentialName }}
+  {{- else }}
+    - port:
+        name: http
+        number: 80
+        protocol: HTTP
+  {{- end }}
+      hosts:
+        - "airflow.{{ .Values.global.domain }}"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: "airflow"
+  namespace: {{ .Release.Namespace }}
+spec:
+  hosts:
+    -  "airflow.{{ .Values.global.domain }}"
+  gateways:
+    - "airflow-gateway"
+  http:
+    # FIXME: This is a workaround for airflow Swagger UI
+    - match:
+      - uri:
+          prefix: /api/v1/ui/
+      redirect:
+        uri: /
+    # The main route for airflow
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            port:
+              number: 8080
+            host: "airflow"
+{{- end }}

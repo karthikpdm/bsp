@@ -44,6 +44,7 @@ module "eks" {
 
 ########################################################################################################### 
   env                           = var.env
+  region                        = var.region
   eks_version                   = var.eks_version
   master_role_arn               = module.iam.eks-master-role
   eks_master_sg_id              = module.security_groups.eks_master_sg_id

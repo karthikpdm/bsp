@@ -1,0 +1,234 @@
+apiVersion: v2
+name: osdu-gc-baremetal
+description: A Helm chart for Kubernetes
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.0.7-latest
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+appVersion: 0.0.7-latest
+
+# A list of the chart requirements
+dependencies:
+  # OSDU Infra
+  ## Airflow
+  - name: airflow
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/deployment-and-operations/base-containers-gcp/airflow-helm-chart/gc-helm
+    condition: airflow.enabled
+  ## Elasticsearch
+  - name: elasticsearch
+    version: 17.9.29
+    repository: oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/elastic-helm-chart/gc-helm
+    condition: elasticsearch.enabled
+  ## Keycloak
+  - name: keycloak
+    version: 18.3.4
+    repository: oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/keycloak-helm-chart/gc-helm
+    condition: keycloak.enabled
+    ## MinIO
+  - name: minio
+    version: 13.4.6
+    repository: oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/minio-helm-chart/gc-helm
+    condition: minio.enabled
+    ## PostgreSQL
+  - name: postgresql
+    version: 15.2.0
+    repository: oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/postgresql-helm-chart/gc-helm
+    condition: postgresql.enabled
+    ## RabbitMQ
+  - name: rabbitmq
+    # Check compatibility with community plugin(s)
+    # (values.rabbit.communityPlugin) when changing version of chart and application
+    version: 15.1.0
+    repository: oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/rabbitmq-helm-chart/gc-helm
+    condition: rabbitmq.enabled
+  - name: gc-bootstrap-rabbitmq-baremetal
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/deployment-and-operations/base-containers-gcp/rabbitmq-bootstrap/gc-helm
+    condition: rabbitmq_bootstrap.enabled
+    alias: rabbitmq_bootstrap
+  - name: gc-infra-bootstrap
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/deployment-and-operations/base-containers-gcp/infra-gc-bootstrap/gc-helm
+    condition: gc_infra_bootstrap.enabled
+    alias: gc_infra_bootstrap
+  # OSDU Services
+  ## Infra Bootstrap
+  - name: gc-baremetal-infra-bootstrap
+    alias: gc_baremetal_infra_bootstrap
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/deployment-and-operations/base-containers-gcp/infra-bootstrap-for-reference-implementation/gc-helm
+    condition: gc_baremetal_infra_bootstrap.enabled
+  # Config
+  - name: gc-config-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/deployment-and-operations/config-service/gc-helm
+    condition: gc_config_deploy.enabled
+    alias: gc_config_deploy
+  ## CRS-Catalog
+  - name: gc-crs-catalog-deploy
+    version: 0.27.1-gc.2
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/reference/crs-catalog-service/gc-helm
+    condition: gc-crs-catalog-deploy.enabled
+  ## CRS-Conversion
+  - name: gc-crs-conversion-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/reference/crs-conversion-service/gc-helm
+    condition: gc-crs-conversion-deploy.enabled
+  ## Dataset
+  - name: gc-dataset-deploy
+    version: 0.27.2
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/dataset/gc-helm
+    condition: gc_dataset_deploy.enabled
+    alias: gc_dataset_deploy
+  ## Entitlements
+  - name: gc-entitlements-deploy
+    version: 0.27.4
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/security-and-compliance/entitlements/gc-helm
+    condition: gc_entitlements_deploy.enabled
+    alias: gc_entitlements_deploy
+  ## File
+  - name: gc-file-deploy
+    version: 0.27.2
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/file/gc-helm
+    condition: gc_file_deploy.enabled
+    alias: gc_file_deploy
+  ## Indexer
+  - name: gc-indexer-deploy
+    version: 0.27.2
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/indexer-service/gc-helm
+    condition: gc_indexer_deploy.enabled
+    alias: gc_indexer_deploy
+  ## Legal (ComImpl with GC modules)
+  - name: gc-legal-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/security-and-compliance/legal/gc-helm
+    condition: gc_legal_deploy.enabled
+    alias: gc_legal_deploy
+  ## Legal (ComImpl)
+  - name: core-plus-legal-deploy
+    version: 0.0.7-latest
+    repository: oci://community.opengroup.org:5555/osdu/platform/security-and-compliance/legal/core-helm
+    condition: core_legal_deploy.enabled
+    alias: core_legal_deploy
+  ## Notification
+  - name: gc-notification-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/notification/gc-helm
+    condition: gc_notification_deploy.enabled
+    alias: gc_notification_deploy
+  ## Partition
+  - name: gc-partition-deploy
+    version: 0.27.1-gc.2
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/partition/gc-helm
+    condition: gc_partition_deploy.enabled
+    alias: gc_partition_deploy
+  ## Policy
+  - name: gc-policy-deploy
+    version: 0.27.6-gc.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/security-and-compliance/policy/gc-helm
+    condition: gc_policy_deploy.enabled
+    alias: gc_policy_deploy
+  ## Register
+  - name: gc-register-deploy
+    version: 0.27.2
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/register/gc-helm
+    condition: gc_register_deploy.enabled
+    alias: gc_register_deploy
+  ## Schema
+  - name: gc-schema-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/schema-service/gc-helm
+    condition: gc_schema_deploy.enabled
+    alias: gc_schema_deploy
+  ## Search
+  - name: gc-search-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/search-service/gc-helm
+    condition: gc_search_deploy.enabled
+    alias: gc_search_deploy
+  ## Storage
+  - name: gc-storage-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/storage/gc-helm
+    condition: gc_storage_deploy.enabled
+    alias: gc_storage_deploy
+  ## Unit
+  - name: gc-unit-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/system/reference/unit-service/gc-helm
+    condition: gc_unit_deploy.enabled
+    alias: gc_unit_deploy
+  ## Wellbore
+  - name: gc-wellbore-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/domain-data-mgmt-services/wellbore/wellbore-domain-services/gc-helm
+    condition: gc_wellbore_deploy.enabled
+    alias: gc_wellbore_deploy
+  ## Wellbore Worker
+  - name: gc-wellbore-worker-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/domain-data-mgmt-services/wellbore/wellbore-domain-services-worker/gc-helm
+    condition: gc_wellbore_worker_deploy.enabled
+    alias: gc_wellbore_worker_deploy
+  ## Well Delivery
+  - name: gc-well-delivery-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/domain-data-mgmt-services/well-delivery/well-delivery/gc-helm
+    condition: gc_well_delivery_deploy.enabled
+    alias: gc_well_delivery_deploy
+  ## Workflow
+  - name: gc-workflow-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/data-flow/ingestion/ingestion-workflow/gc-helm
+    condition: gc_workflow_deploy.enabled
+    alias: gc_workflow_deploy
+  ## Seismic services
+  # sdms
+  - name: gc-seismic-store-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/domain-data-mgmt-services/seismic/seismic-dms-suite/seismic-store-service/gc-helm
+    condition: gc_seismic_store_sdms_deploy.enabled
+    alias: gc_seismic_store_sdms_deploy
+  ## Secret service
+  - name: gc-secret-deploy
+    version: 0.27.1
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/security-and-compliance/secret/gc-helm
+    condition: gc_secret_deploy.enabled
+    alias: gc_secret_deploy
+    ## EDS DMS
+  - name: gc-eds-dms-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/data-flow/ingestion/external-data-sources/eds-dms/gc-helm
+    condition: gc_eds_dms_deploy.enabled
+    alias: gc_eds_dms_deploy
+    ## Open ETP client
+  - name: gc-oetp-client-deploy
+    version: 0.27.2
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-client/gc-helm
+    condition: gc_oetp_client_deploy.enabled
+    alias: gc_oetp_client_deploy
+    ## Open ETP server
+  - name: gc-oetp-server-deploy
+    version: 0.27.0
+    repository: oci://us-central1-docker.pkg.dev/osdu-anthos/osdu-community-docker/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server/gc-helm
+    condition: gc_oetp_server_deploy.enabled
+    alias: gc_oetp_server_deploy
+    ## DFaaS tests
+  - name: dfaas-tests
+    version: 0.27.1
+    repository: oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/dfaas-tests/gc-helm
+    condition: dfaas_tests.enabled
+    alias: dfaas_tests

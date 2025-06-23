@@ -1,0 +1,85 @@
+[
+  {
+    "user": "${MINIO_SCHEMA_USERNAME}",
+    "password": "${MINIO_SCHEMA_PASSWORD}",
+    "buckets": [
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-schema",
+      "${MINIO_BUCKET_PREFIX}-system-schema"
+    ]
+  },
+  {
+    "user": "${MINIO_FILE_USERNAME}",
+    "password": "${MINIO_FILE_PASSWORD}",
+    "buckets": [
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-staging-area",
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-persistent-area"
+    ]
+  },
+  {
+    "user": "${MINIO_LEGAL_USERNAME}",
+    "password": "${MINIO_LEGAL_PASSWORD}",
+    "buckets": [
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-legal-config"
+    ]
+  },
+  {
+    "user": "${MINIO_SEISMIC_STORE_USERNAME}",
+    "password": "${MINIO_SEISMIC_STORE_PASSWORD}",
+    "buckets": [
+      "ss-dev"
+    ]
+  },
+  {
+    "user": "${MINIO_STORAGE_USERNAME}",
+    "password": "${MINIO_STORAGE_PASSWORD}",
+    "buckets": [
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-records"
+    ]
+  },
+  {
+    "user": "${MINIO_POLICY_USERNAME}",
+    "password": "${MINIO_POLICY_PASSWORD}",
+    "buckets": [
+      "${MINIO_BUCKET_PREFIX}-opa-policies"
+    ]
+  },
+  {
+    "user": "${MINIO_WELLBORE_USERNAME}",
+    "password": "${MINIO_WELLBORE_PASSWORD}",
+    "buckets": [
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-wellbore"
+    ]
+  },
+  {
+    "user": "${MINIO_AIRFLOWLOG_USERNAME}",
+    "password": "${MINIO_AIRFLOWLOG_PASSWORD}",
+    "buckets": [
+      "airflow-log"
+    ],
+    "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetBucketLocation",
+            "s3:GetObject",
+            "s3:ListBucket",
+            "s3:CreateBucket",
+            "s3:PutObject"
+          ],
+          "Resource": "arn:aws:s3:::airflow-log/*"
+        }
+      ]
+    }
+  },
+  {
+    "user": "${MINIO_DAG_USERNAME}",
+    "password": "${MINIO_DAG_PASSWORD}",
+    "buckets": [
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-staging-area",
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-persistent-area",
+      "${MINIO_BUCKET_PREFIX}-${MINIO_PARTITION_NAME}-records"
+    ]
+  }
+]

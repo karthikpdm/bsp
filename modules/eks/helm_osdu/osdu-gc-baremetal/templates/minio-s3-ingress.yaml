@@ -1,0 +1,109 @@
+#  Copyright 2023 Google LLC
+#  Copyright 2023 EPAM
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+{{- if .Values.minio.enabled }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: "minio-gateway"
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  {{- if .Values.global.useHttps }}
+    - port:
+        name: https
+        number: 443
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: {{ .Values.domain.tls.minioCredentialName }}
+  {{- else }}
+    - port:
+        name: http
+        number: 80
+        protocol: HTTP
+  {{- end }}
+      hosts:
+        - "minio.{{ .Values.global.domain }}"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: "s3-gateway"
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  {{- if .Values.global.useHttps }}
+    - port:
+        name: https
+        number: 443
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: {{ .Values.domain.tls.s3CredentialName }}
+  {{- else }}
+    - port:
+        name: http
+        number: 80
+        protocol: HTTP
+  {{- end }}
+      hosts:
+        - "s3.{{ .Values.global.domain }}"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: "{{ .Release.Name }}-s3"
+  namespace: {{ .Release.Namespace }}
+spec:
+  hosts:
+    - "s3.{{ .Values.global.domain }}"
+  gateways:
+    - "s3-gateway"
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            port:
+              number: 9000
+            host: "minio"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: "{{ .Release.Name }}-minio"
+  namespace: {{ .Release.Namespace }}
+spec:
+  hosts:
+    - "minio.{{ .Values.global.domain }}"
+  gateways:
+    - "minio-gateway"
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            port:
+              number: 9001
+            host: "minio"
+{{- end }}

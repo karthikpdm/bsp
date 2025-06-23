@@ -1,0 +1,77 @@
+{{- $scheme := ternary "https" "http" .Values.global.useHttps -}}
+{{- $prefix := ternary "osdu." "" .Values.global.onPremEnabled -}}
+
+Thank you for installing {{ .Chart.Name }}.
+
+Primary data partition: {{ .Values.global.dataPartitionId }}
+
+Following charts and services were installed:
+{{- if .Values.minio.enabled }}
+- MinIO
+{{- end }}
+{{- if .Values.postgresql.enabled }}
+- PostgreSQL
+{{- end }}
+{{- if .Values.rabbitmq.enabled }}
+- RabbitMQ
+{{- end }}
+{{- if .Values.elasticsearch.enabled }}
+- ElasticSearch
+{{- end }}
+{{- if .Values.keycloak.enabled }}
+- Keycloak
+{{- end }}
+{{- if .Values.airflow.enabled }}
+- Airflow
+{{- end }}
+
+OSDU Services Endpoints:
+Config:         |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/config/v1/info"
+CRS-Catalog:    |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/crs/catalog/v2/info"
+CRS-Conversion: |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/crs/converter/v2/info"
+Dataset:        |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/dataset/v1/info"
+EDS DMS:        |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/eds/v1/info"
+Entitlements:   |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/entitlements/v2/info"
+File:           |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/file/v2/info"
+Indexer:        |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/indexer/v2/info"
+Legal:          |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/legal/v1/info"
+Notification:   |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/notification/v1/info"
+Partition:      |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/partition/v1/info"
+Policy:         |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/policy/v1/health"
+Register:       |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/register/v1/info"
+Schema:         |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/schema-service/v1/info"
+Search:         |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/search/v2/info"
+Secret:         |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/secret/v1/info"
+Seismic-Store:  |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/seismic-store/v3/svcstatus"
+Storage:        |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/storage/v2/info"
+Unit:           |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/unit/v3/info"
+Well-Delivery:  |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/well-delivery/info"
+Wellbore DDMS:  |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/os-wellbore-ddms/ddms/v2/about"
+Workflow:       |   "{{ $scheme }}://{{ $prefix }}{{ .Values.global.domain }}/api/workflow/v1/info"
+
+Access to services:
+{{- if .Values.airflow.enabled }}
+Airflow is available via: "{{ $scheme }}://airflow.{{ .Values.global.domain }}"
+{{- end }}
+{{- if .Values.minio.enabled }}
+MinIO is available via: "{{ $scheme }}://minio.{{ .Values.global.domain }}"
+{{- end }}
+{{- if .Values.keycloak.enabled }}
+Keycloak is available via: "{{ $scheme }}://keycloak.{{ .Values.global.domain }}/admin"
+{{- end }}
+
+
+Domain name: {{ .Values.global.domain }}
+
+
+{{- if .Values.keycloak.enabled }}
+
+To start working with the installed OSDU platform obtain credentials:
+
+- Get osdu-admin secret for admin OSDU platform from the cluster:
+    CLIENT_ID=osdu-admin
+    CLIENT_SECRET=$(kubectl get secret keycloak-bootstrap-secret -o jsonpath="{.data.KEYCLOAK_OSDU_ADMIN_SECRET}" | base64 --decode)
+
+Use OSDU baremetal Quick start guide for working with the installed OSDU platform: 
+    https://community.opengroup.org/groups/osdu/platform/-/wikis/OSDU-baremetal-QSG
+{{- end }}

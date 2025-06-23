@@ -65,3 +65,17 @@ output "installation_info" {
     Check status: kubectl get pods
   EOT
 }
+
+
+
+
+# Add after the helm_release
+output "osdu_release_status" {
+  description = "OSDU Helm release status"
+  value = {
+    name      = helm_release.osdu-baremetal.name
+    namespace = helm_release.osdu-baremetal.namespace
+    version   = helm_release.osdu-baremetal.version
+    status    = helm_release.osdu-baremetal.status
+  }
+}

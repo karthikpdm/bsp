@@ -217,7 +217,9 @@ resource "kubernetes_namespace" "istio_gateway" {
   depends_on = [aws_eks_node_group.node-grp]
 }
 
-#######################################################################################################
+#########################################################################
+# STEP 5: Install Istio Ingress Gateway
+#########################################################################
 
 resource "helm_release" "istio_ingress" {
   name             = "istio-ingress"
@@ -256,6 +258,70 @@ resource "helm_release" "istio_ingress" {
 }
 
 #########################################################################################################
+
+#########################################################################
+# STEP 6: Update Kubeconfig for kubectl Access
+#########################################################################
+resource "null_resource" "update_kubeconfig" {
+  provisioner "local-exec" {
+    command = "echo 'Updating kubeconfig...' && aws eks update-kubeconfig --region ${var.region} --name ${aws_eks_cluster.eks.name}"
+  }
+
+  triggers = {
+    cluster_name = aws_eks_cluster.eks.name
+    region       = var.region
+  }
+
+  depends_on = [
+    aws_eks_cluster.eks,
+    aws_eks_node_group.node-grp
+  ]
+}
+
+#########################################################################
+# STEP 7: Enable Istio Sidecar Injection for Default Namespace
+#########################################################################
+resource "null_resource" "label_default_namespace" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo 'Labeling default namespace for Istio sidecar injection...'
+      kubectl label namespace default istio-injection=enabled --overwrite
+      echo 'Default namespace labeled successfully for Istio sidecar injection'
+    EOT
+  }
+
+  triggers = {
+    cluster_name = aws_eks_cluster.eks.name
+    istio_version = var.istio_version
+  }
+
+  depends_on = [
+    null_resource.update_kubeconfig,
+    helm_release.istiod
+  ]
+}
+
+#########################################################################
+# STEP 8: Verification - Check Istio Installation
+#########################################################################
+resource "null_resource" "verify_istio_installation" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo 'Verifying Istio installation...'
+      kubectl get namespaces --show-labels | grep istio
+      kubectl get pods -n istio-system
+      kubectl get pods -n istio-gateway
+      echo 'Istio installation verification complete'
+    EOT
+  }
+
+  depends_on = [
+    helm_release.istio_base,
+    helm_release.istiod,
+    helm_release.istio_ingress,
+    null_resource.label_default_namespace
+  ]
+}
 
 # data "kubernetes_service" "istio_ingress" {
 #   metadata {
