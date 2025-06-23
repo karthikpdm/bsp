@@ -51,8 +51,8 @@ module "eks" {
 
 ###############################  worker ###########################################################################
   worker_role_arn               = module.iam.worker_role_arn
-  disk_size                     = var.disk_size
-  instance_type                 = var.instance_type
+  # disk_size                     = var.disk_size
+  # instance_type                 = var.instance_type
   tags = var.tags
 
 ###############################  istio ###########################################################################
