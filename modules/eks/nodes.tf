@@ -7,9 +7,9 @@ resource "aws_eks_node_group" "node-grp" {
 
   # Fixed 3 nodes - no auto-scaling
   scaling_config {
-    desired_size = 1
-    max_size     = 1
-    min_size     = 1
+    desired_size = 5
+    max_size     = 5
+    min_size     = 4
   }
 
   # Update configuration
