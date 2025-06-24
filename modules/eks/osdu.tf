@@ -23,6 +23,8 @@ resource "helm_release" "osdu-baremetal" {
   version   = "0.27.2"
   namespace = "default"
 
+  dependency_update = true
+
   # Increased timeout for complex OSDU deployment
   timeout = 1800  # 30 minutes (OSDU can take 15-20 minutes to deploy)
   
@@ -76,32 +78,3 @@ resource "helm_release" "osdu-baremetal" {
 
 
 
-# # OSDU Baremetal Helm Installation
-# resource "helm_release" "osdu_baremetal" {
-#   name       = "osdu-baremetal"
-#   repository = "oci://community.opengroup.org:5555/osdu/platform/deployment-and-operations/infra-gcp-provisioning/gc-helm"
-#   chart      = "osdu-gc-baremetal"
-#   namespace  = "default"
-#   timeout    = 1800  # 30 minutes
-#   wait       = true
-
-#   # Force update configuration
-#   force_update    = true
-#   recreate_pods   = true
-#   cleanup_on_fail = true
-#   atomic          = true
-  
-#   # Replace trigger to force upgrades when values change
-#   # replace_triggered_by = [
-#   #   filesha256("${path.module}/custom-values.yaml")
-#   # ]
-
-#   # This reads your custom-values.yaml file
-#   values = [
-#     file("${path.module}/custom-values.yaml")
-#   ]
-
-#   depends_on = [
-#     data.kubernetes_service.istio_ingress
-#   ]
-# }
