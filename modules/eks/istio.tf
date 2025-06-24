@@ -216,7 +216,9 @@ resource "kubernetes_namespace" "istio_gateway" {
     }
   }
 
-  depends_on = [aws_eks_node_group.node-grp]
+  depends_on = [aws_eks_node_group.istio-node-grp,
+    aws_eks_node_group.backend-node-grp,
+    aws_eks_node_group.frontend-node-grp]
 }
 
 #########################################################################
