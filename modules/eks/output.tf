@@ -31,10 +31,10 @@ output "eks_cluster_oidc_issuer" {
 
 
 # Outputs
-output "istio_load_balancer_hostname" {
-  description = "Your AWS Load Balancer hostname"
-  value       = local.istio_hostname
-}
+# output "istio_load_balancer_hostname" {
+#   description = "Your AWS Load Balancer hostname"
+#   value       = local.istio_hostname
+# }
 
 output "osdu_urls" {
   description = "OSDU service endpoints"
