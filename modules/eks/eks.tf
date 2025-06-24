@@ -141,7 +141,10 @@ resource "aws_eks_addon" "vpc-cni" {
    # Ensure proper creation order
   depends_on = [
     aws_eks_cluster.eks,
-    aws_eks_node_group.node-grp
+    # aws_eks_node_group.node-grp
+    aws_eks_node_group.istio-node-grp,
+    aws_eks_node_group.backend-node-grp,
+    aws_eks_node_group.frontend-node-grp
   ]
 
     tags = var.tags
@@ -164,7 +167,9 @@ resource "aws_eks_addon" "kube-proxy" {
 
   depends_on = [
     aws_eks_cluster.eks,
-    aws_eks_node_group.node-grp
+    aws_eks_node_group.istio-node-grp,
+    aws_eks_node_group.backend-node-grp,
+    aws_eks_node_group.frontend-node-grp
   ]
 
   tags = var.tags
@@ -331,7 +336,9 @@ resource "aws_eks_addon" "ebs-csi" {
 
   depends_on = [
     aws_eks_cluster.eks,
-    aws_eks_node_group.node-grp,
+    aws_eks_node_group.istio-node-grp,
+    aws_eks_node_group.backend-node-grp,
+    aws_eks_node_group.frontend-node-grp,
     aws_iam_openid_connect_provider.eks,
     aws_iam_role_policy_attachment.ebs_csi_driver_policy
   ]
@@ -355,7 +362,9 @@ resource "aws_eks_addon" "coredns" {
 
   depends_on = [
     aws_eks_cluster.eks,
-    aws_eks_node_group.node-grp
+    aws_eks_node_group.istio-node-grp,
+    aws_eks_node_group.backend-node-grp,
+    aws_eks_node_group.frontend-node-grp
   ]
 
   tags = var.tags

@@ -144,7 +144,9 @@ resource "kubernetes_namespace" "istio_system" {
   
   depends_on = [
     aws_eks_cluster.eks,
-    aws_eks_node_group.node-grp
+    aws_eks_node_group.istio-node-grp,
+    aws_eks_node_group.backend-node-grp,
+    aws_eks_node_group.frontend-node-grp
   ]
 }
 
@@ -274,7 +276,9 @@ resource "null_resource" "update_kubeconfig" {
 
   depends_on = [
     aws_eks_cluster.eks,
-    aws_eks_node_group.node-grp
+    aws_eks_node_group.istio-node-grp,
+    aws_eks_node_group.backend-node-grp,
+    aws_eks_node_group.frontend-node-grp
   ]
 }
 
