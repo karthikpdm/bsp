@@ -1,16 +1,16 @@
 
 
 # Get Istio LoadBalancer information
-data "kubernetes_service" "istio_ingress" {
-  metadata {
-    name      = "istio-ingress"
-    namespace = "istio-gateway"
-  }
-}
+# data "kubernetes_service" "istio_ingress" {
+#   metadata {
+#     name      = "istio-ingress"
+#     namespace = "istio-gateway"
+#   }
+# }
 
-locals {
-  istio_hostname = try(data.kubernetes_service.istio_ingress.status.0.load_balancer.0.ingress.0.hostname, "")
-}
+# locals {
+#   istio_hostname = try(data.kubernetes_service.istio_ingress.status.0.load_balancer.0.ingress.0.hostname, "")
+# }
 
 ################################################################################################################
 
