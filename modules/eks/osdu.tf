@@ -52,7 +52,7 @@ resource "helm_release" "osdu-baremetal" {
     null_resource.label_default_namespace,
     
     # Ensure Istio ingress service is available
-    data.kubernetes_service.istio_ingress
+    # data.kubernetes_service.istio_ingress
   ]
 }
 
