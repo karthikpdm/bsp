@@ -68,13 +68,15 @@ variable "istio_instance_type" {
 variable "backend_instance_type" {
   description = "Instance type for backend database nodes"
   type        = string
-  default     = "m5.2xlarge"
+  # default     = "m5.2xlarge"
+  default     = "t3.large"
 }
 
 variable "frontend_instance_type" {
   description = "Instance type for frontend microservice nodes"
   type        = string
-  default     = "m5.xlarge"
+  # default     = "m5.xlarge"
+  default     = "t3.large"
 }
 
 # Disk sizes for different node groups
@@ -87,19 +89,19 @@ variable "istio_disk_size" {
 variable "backend_disk_size" {
   description = "Root disk size for backend nodes in GB"
   type        = number
-  default     = 200
+  default     = 80
 }
 
 variable "backend_data_disk_size" {
   description = "Additional data disk size for backend nodes in GB"
   type        = number
-  default     = 500
+  default     = 20
 }
 
 variable "frontend_disk_size" {
   description = "Root disk size for frontend nodes in GB"
   type        = number
-  default     = 150
+  default     = 80
 }
 
 # Node group scaling configurations
@@ -111,8 +113,8 @@ variable "istio_node_config" {
     min_size     = number
   })
   default = {
-    desired_size = 2
-    max_size     = 4
+    desired_size = 1
+    max_size     = 1
     min_size     = 1
   }
 }
@@ -125,9 +127,9 @@ variable "backend_node_config" {
     min_size     = number
   })
   default = {
-    desired_size = 3
-    max_size     = 5
-    min_size     = 2
+    desired_size = 1
+    max_size     = 1
+    min_size     = 1
   }
 }
 
@@ -139,9 +141,9 @@ variable "frontend_node_config" {
     min_size     = number
   })
   default = {
-    desired_size = 4
-    max_size     = 8
-    min_size     = 2
+    desired_size = 1
+    max_size     = 1
+    min_size     = 1
   }
 }
 
