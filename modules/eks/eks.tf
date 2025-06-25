@@ -310,6 +310,44 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_driver_policy" {
 ###########################################################################################################
 
 # EBS CSI Driver Add-on
+# data "aws_eks_addon_version" "ebs-csi-default" {
+#   addon_name         = "aws-ebs-csi-driver"
+#   kubernetes_version = aws_eks_cluster.eks.version
+# }
+
+# resource "aws_eks_addon" "ebs-csi" {
+#   addon_name               = "aws-ebs-csi-driver"
+#   addon_version            = data.aws_eks_addon_version.ebs-csi-default.version
+#   cluster_name             = aws_eks_cluster.eks.name
+#   resolve_conflicts_on_create = "OVERWRITE"
+#   resolve_conflicts_on_update = "OVERWRITE"
+#   service_account_role_arn = aws_iam_role.ebs_csi_driver_role.arn
+
+#   configuration_values = jsonencode({
+#     controller = {
+#       tolerations = [
+#         {
+#           key      = "CriticalAddonsOnly"
+#           operator = "Exists"
+#         }
+#       ]
+#     }
+#   })
+
+#   depends_on = [
+#     aws_eks_cluster.eks,
+#     aws_eks_node_group.istio-node-grp,
+#     aws_eks_node_group.backend-node-grp,
+#     aws_eks_node_group.frontend-node-grp,
+#     aws_iam_openid_connect_provider.eks,
+#     aws_iam_role_policy_attachment.ebs_csi_driver_policy
+#   ]
+
+#   tags = var.tags
+# }
+
+
+# EBS CSI Driver Add-on with Controller on All Nodes
 data "aws_eks_addon_version" "ebs-csi-default" {
   addon_name         = "aws-ebs-csi-driver"
   kubernetes_version = aws_eks_cluster.eks.version
@@ -325,7 +363,60 @@ resource "aws_eks_addon" "ebs-csi" {
 
   configuration_values = jsonencode({
     controller = {
+      # Allow EBS CSI controller to run on ALL nodes
       tolerations = [
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-istio-keycloak"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-backend"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-frontend"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "CriticalAddonsOnly"
+          operator = "Exists"
+        }
+      ]
+      
+      # No nodeSelector = can run on any node
+      # Removed nodeSelector to allow scheduling on all nodes
+      
+      # Multiple replicas for high availability
+      replicaCount = 3
+    }
+    
+    node = {
+      # Allow EBS CSI node pods to run on all node groups (they need to run on every node)
+      tolerations = [
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-istio-keycloak"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-backend"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-frontend"
+          effect   = "NoSchedule"
+        },
         {
           key      = "CriticalAddonsOnly"
           operator = "Exists"
@@ -348,6 +439,30 @@ resource "aws_eks_addon" "ebs-csi" {
 
 ###########################################################################################################
 ###########################################################################################################
+# data "aws_eks_addon_version" "coredns-default" {
+#   addon_name         = "coredns"
+#   kubernetes_version = aws_eks_cluster.eks.version
+# }
+
+# resource "aws_eks_addon" "coredns" {
+#   addon_name        = "coredns"
+#   addon_version     = data.aws_eks_addon_version.coredns-default.version
+#   resolve_conflicts_on_create = "OVERWRITE"
+#   resolve_conflicts_on_update = "OVERWRITE"
+#   cluster_name      = aws_eks_cluster.eks.name
+
+#   depends_on = [
+#     aws_eks_cluster.eks,
+#     aws_eks_node_group.istio-node-grp,
+#     aws_eks_node_group.backend-node-grp,
+#     aws_eks_node_group.frontend-node-grp
+#   ]
+
+#   tags = var.tags
+
+
+# }
+
 data "aws_eks_addon_version" "coredns-default" {
   addon_name         = "coredns"
   kubernetes_version = aws_eks_cluster.eks.version
@@ -360,6 +475,30 @@ resource "aws_eks_addon" "coredns" {
   resolve_conflicts_on_update = "OVERWRITE"
   cluster_name      = aws_eks_cluster.eks.name
 
+  configuration_values = jsonencode({
+    # Run ONLY on istio-keycloak nodes
+    tolerations = [
+      {
+        key      = "node-role"
+        operator = "Equal"
+        value    = "osdu-istio-keycloak"
+        effect   = "NoSchedule"
+      },
+      {
+        key      = "CriticalAddonsOnly"
+        operator = "Exists"
+      }
+    ]
+    
+    # Force CoreDNS to run ONLY on osdu-istio-keycloak nodes
+    nodeSelector = {
+      "node-role" = "osdu-istio-keycloak"
+    }
+    
+    # Just 2 replicas for HA
+    replicaCount = 2
+  })
+
   depends_on = [
     aws_eks_cluster.eks,
     aws_eks_node_group.istio-node-grp,
@@ -368,8 +507,6 @@ resource "aws_eks_addon" "coredns" {
   ]
 
   tags = var.tags
-
-
 }
 
 #######################################################################

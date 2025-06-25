@@ -160,48 +160,133 @@ resource "helm_release" "istio_base" {
   namespace  = kubernetes_namespace.istio_system.metadata[0].name
   version    = var.istio_version # Latest stable, meets OSDU requirement (1.17.2+)
 
-  set {
-    name  = "global.istioNamespace"
-    value = "istio-system"
-  }
-  
+  values = [
+    yamlencode({
+      global = {
+        istioNamespace = "istio-system"
+        
+        # Allow pods to run on osdu-istio-keycloak nodes
+        defaultTolerations = [
+          {
+            key      = "node-role"
+            operator = "Equal"
+            value    = "osdu-istio-keycloak"
+            effect   = "NoSchedule"
+          }
+        ]
+        
+        # Force pods to run ONLY on osdu-istio-keycloak nodes
+        defaultNodeSelector = {
+          "node-role" = "osdu-istio-keycloak"
+        }
+      }
+    })
+  ]
+
   depends_on = [kubernetes_namespace.istio_system]
 }
 
 #########################################################################
 # STEP 3: Install Istio Control Plane (Istiod)
 #########################################################################
+# resource "helm_release" "istiod" {
+#   name       = "istiod"
+#   repository = "https://istio-release.storage.googleapis.com/charts"
+#   chart      = "istiod"
+#   namespace  = kubernetes_namespace.istio_system.metadata[0].name
+#   version    = var.istio_version
+  
+
+#   set {
+#     name  = "telemetry.enabled"
+#     value = "true"
+#   }
+
+#   set {
+#     name  = "global.istioNamespace"
+#     value = "istio-system"
+#   }
+
+#   set {
+#     name  = "meshConfig.ingressService"
+#     value = "istio-gateway"
+#   }
+
+#   set {
+#     name  = "meshConfig.ingressSelector"
+#     value = "gateway"
+#   }
+
+#   depends_on = [helm_release.istio_base]
+# }
+
+
 resource "helm_release" "istiod" {
   name       = "istiod"
   repository = "https://istio-release.storage.googleapis.com/charts"
   chart      = "istiod"
   namespace  = kubernetes_namespace.istio_system.metadata[0].name
   version    = var.istio_version
-  
 
-  set {
-    name  = "telemetry.enabled"
-    value = "true"
-  }
+  values = [
+    yamlencode({
+      # Basic configuration
+      telemetry = {
+        enabled = true
+      }
 
-  set {
-    name  = "global.istioNamespace"
-    value = "istio-system"
-  }
+      global = {
+        istioNamespace = "istio-system"
+        
+        # Allow pods to run on osdu-istio-keycloak nodes
+        defaultTolerations = [
+          {
+            key      = "node-role"
+            operator = "Equal"
+            value    = "osdu-istio-keycloak"
+            effect   = "NoSchedule"
+          }
+        ]
+        
+        # Force pods to run ONLY on osdu-istio-keycloak nodes
+        defaultNodeSelector = {
+          "node-role" = "osdu-istio-keycloak"
+        }
+      }
 
-  set {
-    name  = "meshConfig.ingressService"
-    value = "istio-gateway"
-  }
+      meshConfig = {
+        ingressService  = "istio-gateway"
+        ingressSelector = "gateway"
+      }
 
-  set {
-    name  = "meshConfig.ingressSelector"
-    value = "gateway"
-  }
+      # Istiod specific - ensure it runs on correct nodes
+      pilot = {
+        # Allow istiod to ignore the taint
+        tolerations = [
+          {
+            key      = "node-role"
+            operator = "Equal"
+            value    = "osdu-istio-keycloak"
+            effect   = "NoSchedule"
+          }
+        ]
+        
+        # Force istiod to run ONLY on osdu-istio-keycloak nodes
+        nodeSelector = {
+          "node-role" = "osdu-istio-keycloak"
+        }
+      }
+    })
+  ]
 
-  depends_on = [helm_release.istio_base]
+  wait    = true
+  timeout = 600
+
+  depends_on = [
+    helm_release.istio_base,
+    kubernetes_namespace.istio_system
+  ]
 }
-
 
 
 #########################################################################
@@ -225,42 +310,111 @@ resource "kubernetes_namespace" "istio_gateway" {
 # STEP 5: Install Istio Ingress Gateway
 #########################################################################
 
+# resource "helm_release" "istio_ingress" {
+#   name             = "istio-ingress"
+#   repository       = "https://istio-release.storage.googleapis.com/charts"
+#   chart            = "gateway"
+#   namespace        = kubernetes_namespace.istio_gateway.metadata.0.name
+#   version          = "1.25.0"
+#   timeout          = 500  #1200
+#   force_update  = true
+#   recreate_pods = true
+#   description   = "force update 1"
+
+#   set {
+#     name  = "labels.istio"
+#     value = "ingressgateway"
+#   }
+
+#   set {
+#     name  = "service.type"
+#     value = "LoadBalancer"
+#   }
+
+#   set {
+#     name  = "service.externalTrafficPolicy"
+#     value = "Local"
+#   }
+  
+
+# #   timeout = 1200
+#   wait    = true
+
+#   depends_on = [
+#     helm_release.istio_base,
+#     helm_release.istiod,
+#   ]
+# }
+
+
 resource "helm_release" "istio_ingress" {
   name             = "istio-ingress"
   repository       = "https://istio-release.storage.googleapis.com/charts"
   chart            = "gateway"
   namespace        = kubernetes_namespace.istio_gateway.metadata.0.name
   version          = "1.25.0"
-  timeout          = 500  #1200
-  force_update  = true
-  recreate_pods = true
-  description   = "force update 1"
+  timeout          = 500
+  force_update     = true
+  recreate_pods    = true
+  description      = "force update 1"
 
-  set {
-    name  = "labels.istio"
-    value = "ingressgateway"
-  }
+  values = [
+    yamlencode({
+      # Gateway image configuration
+      image = {
+        repository = "docker.io/istio/proxyv2"
+        tag        = var.istio_version
+        pullPolicy = "IfNotPresent"
+      }
 
-  set {
-    name  = "service.type"
-    value = "LoadBalancer"
-  }
+      # LoadBalancer service configuration
+      service = {
+        type = "LoadBalancer"
+        ports = [
+          {
+            port       = 80
+            targetPort = 8080
+            name       = "http2"
+          },
+          {
+            port       = 443
+            targetPort = 8443
+            name       = "https"
+          }
+        ]
+        externalTrafficPolicy = "Local"
+      }
 
-  set {
-    name  = "service.externalTrafficPolicy"
-    value = "Local"
-  }
-  
+      # Gateway labels
+      labels = {
+        istio = "ingressgateway"
+      }
 
-#   timeout = 1200
-  wait    = true
+      # Force gateway to run ONLY on osdu-istio-keycloak nodes
+      nodeSelector = {
+        "node-role" = "osdu-istio-keycloak"
+      }
+
+      # Allow gateway to ignore the taint on osdu-istio-keycloak nodes
+      tolerations = [
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-istio-keycloak"
+          effect   = "NoSchedule"
+        }
+      ]
+    })
+  ]
+
+  wait = true
+  # timeout = 600
 
   depends_on = [
     helm_release.istio_base,
     helm_release.istiod,
   ]
 }
-
 #########################################################################################################
 
 #########################################################################
