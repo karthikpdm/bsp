@@ -75,7 +75,7 @@ variable "backend_instance_type" {
 variable "frontend_instance_type" {
   description = "Instance type for frontend microservice nodes"
   type        = string
-  default     = "m5.xlarge"
+  default     = "m5.2xlarge"
   # default     = "t3.large"
 }
 
