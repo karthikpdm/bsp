@@ -59,25 +59,27 @@ variable "worker_role_arn" {
 # Add these to your variables.tf file:
 
 # Instance types for different node groups
-variable "istio_instance_type" {
+# variable "istio_instance_type" {
+variable "instance_type" {
+
   description = "Instance type for Istio nodes"
   type        = string
   default     = "m5.2xlarge"
 }
 
-variable "backend_instance_type" {
-  description = "Instance type for backend database nodes"
-  type        = string
-  default     = "m5.2xlarge"
-  # default     = "t3.large"
-}
+# variable "backend_instance_type" {
+#   description = "Instance type for backend database nodes"
+#   type        = string
+#   default     = "m5.2xlarge"
+#   # default     = "t3.large"
+# }
 
-variable "frontend_instance_type" {
-  description = "Instance type for frontend microservice nodes"
-  type        = string
-  default     = "m5.2xlarge"
-  # default     = "t3.large"
-}
+# variable "frontend_instance_type" {
+#   description = "Instance type for frontend microservice nodes"
+#   type        = string
+#   default     = "m5.2xlarge"
+#   # default     = "t3.large"
+# }
 
 # Disk sizes for different node groups
 variable "istio_disk_size" {
