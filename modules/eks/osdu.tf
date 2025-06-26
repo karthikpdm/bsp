@@ -90,6 +90,28 @@ resource "helm_release" "osdu-ir-install" {
   values = [
     yamlencode({
 
+      # Global tolerations for all pods
+      tolerations = [
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-backend"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-frontend"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "node-role"
+          operator = "Equal"
+          value    = "osdu-istio-keycloak"
+          effect   = "NoSchedule"
+        }
+      ]
+
       airflow = {
         enabled          = true
         fullnameOverride = "airflow"
@@ -223,7 +245,7 @@ resource "helm_release" "osdu-ir-install" {
         }
         tolerations = [
           {
-            key      = "node-role"  # ✅ FIXED: Changed from "role" to "node-role"
+            key      = "node-role"  # ✅ FIXED
             operator = "Equal"
             value    = "osdu-backend"
             effect   = "NoSchedule"
@@ -272,7 +294,7 @@ resource "helm_release" "osdu-ir-install" {
         }
         tolerations = [
           {
-            key      = "node-role"  # ✅ FIXED: Changed from "role" to "node-role"
+            key      = "node-role"  # ✅ FIXED
             operator = "Equal"
             value    = "osdu-backend"
             effect   = "NoSchedule"
@@ -308,7 +330,7 @@ resource "helm_release" "osdu-ir-install" {
 
         tolerations = [
           {
-            key      = "node-role"  # ✅ FIXED: Changed from "role" to "node-role"
+            key      = "node-role"  # ✅ FIXED
             operator = "Equal"
             value    = "osdu-backend"
             effect   = "NoSchedule"
@@ -361,7 +383,7 @@ resource "helm_release" "osdu-ir-install" {
 
         tolerations = [
           {
-            key      = "node-role"  # ✅ FIXED: Changed from "role" to "node-role"
+            key      = "node-role"  # ✅ FIXED
             operator = "Equal"
             value    = "osdu-backend"
             effect   = "NoSchedule"
@@ -402,7 +424,7 @@ resource "helm_release" "osdu-ir-install" {
 
         tolerations = [
           {
-            key      = "node-role"  # ✅ FIXED: Changed from "role" to "node-role"
+            key      = "node-role"  # ✅ FIXED
             operator = "Equal"
             value    = "osdu-istio-keycloak"
             effect   = "NoSchedule"
@@ -410,20 +432,7 @@ resource "helm_release" "osdu-ir-install" {
         ]
       }
 
-      # ✅ NEW: Add global tolerations and node selectors for bootstrap and microservices
       bootstrap = {
-        nodeSelector = {
-          "node-role" = "osdu-istio-keycloak"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-istio-keycloak"
-            effect   = "NoSchedule"
-          }
-        ]
-        
         airflow = {
           dagImages = {
             csv_parser  = "community.opengroup.org:5555/osdu/platform/data-flow/ingestion/csv-parser/csv-parser/gc-csv-parser:v0.27.0"
@@ -624,34 +633,10 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_baremetal_infra_bootstrap = {
         enabled = true
-        # ✅ NEW: Add scheduling for bootstrap
-        nodeSelector = {
-          "node-role" = "osdu-istio-keycloak"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-istio-keycloak"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       rabbitmq_bootstrap = {
         enabled = true
-        # ✅ NEW: Add scheduling for RabbitMQ bootstrap
-        nodeSelector = {
-          "node-role" = "osdu-istio-keycloak"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-istio-keycloak"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           rabbitmqHost                = "rabbitmq"
           rabbitmqVhost               = "/"
@@ -678,20 +663,8 @@ resource "helm_release" "osdu-ir-install" {
         }
       }
 
-      # ✅ NEW: Add scheduling for all OSDU microservices
       gc_entitlements_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           bootstrapServiceAccountName = "bootstrap-sa"
           adminUserEmail              = "osdu-admin@service.local"
@@ -701,32 +674,10 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_config_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc-crs-catalog-deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           serviceAccountName = "crs-catalog"
         }
@@ -734,17 +685,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_dataset_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           serviceAccountName = "dataset"
         }
@@ -755,32 +695,10 @@ resource "helm_release" "osdu-ir-install" {
 
       gc-crs-conversion-deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_partition_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           policyServiceEnabled  = "true"
           edsEnabled            = "false"
@@ -791,17 +709,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_policy_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           bucketName                  = "refi-opa-policies"
           bootstrapServiceAccountName = "bootstrap-sa"
@@ -810,17 +717,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_storage_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           bootstrapServiceAccountName = "bootstrap-sa"
           opaEnabled                  = true
@@ -829,32 +725,10 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_unit_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_register_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           serviceAccountName = "register"
         }
@@ -867,47 +741,14 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_notification_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_well_delivery_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_workflow_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           sharedTenantName            = "osdu"
           bootstrapServiceAccountName = "bootstrap-sa"
@@ -916,17 +757,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_file_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           serviceAccountName = "file"
         }
@@ -934,17 +764,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_schema_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           bootstrapServiceAccountName = "bootstrap-sa"
         }
@@ -958,17 +777,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_search_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           servicePolicyEnabled = true
         }
@@ -976,17 +784,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_seismic_store_sdms_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           redisDdmsHost = "redis-ddms"
         }
@@ -994,17 +791,6 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_indexer_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         conf = {
           elasticSecretName  = "indexer-elastic-secret"
           keycloakSecretName = "indexer-keycloak-secret"
@@ -1018,17 +804,6 @@ resource "helm_release" "osdu-ir-install" {
 
       core_legal_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
         data = {
           image                     = "community.opengroup.org:5555/osdu/platform/security-and-compliance/legal/core-plus-legal-master:latest"
           imagePullPolicy           = "IfNotPresent"
@@ -1038,62 +813,18 @@ resource "helm_release" "osdu-ir-install" {
 
       gc_wellbore_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_wellbore_worker_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_secret_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_eds_dms_deploy = {
         enabled = true
-        nodeSelector = {
-          "node-role" = "osdu-backend"
-        }
-        tolerations = [
-          {
-            key      = "node-role"
-            operator = "Equal"
-            value    = "osdu-backend"
-            effect   = "NoSchedule"
-          }
-        ]
       }
 
       gc_oetp_client_deploy = {
