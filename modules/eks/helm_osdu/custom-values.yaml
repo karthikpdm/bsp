@@ -49,7 +49,6 @@ airflow:
       limits:
         cpu: "750m"
         memory: "1024Mi"
-  # ✅ CORRECTED: Node selector and tolerations for frontend nodes
   nodeSelector:
     "node-role": "osdu-frontend"
   tolerations:
@@ -64,7 +63,6 @@ istio:
 
 # Global Configuration
 global:
-  # ✅ CORRECTED: Global node selector for frontend services
   nodeSelector:
     "node-role": "osdu-frontend"
   dataPartitionId: "osdu"
@@ -106,7 +104,6 @@ minio:
     mountPath: "/bitnami/minio/data"
   extraEnvVarsCM: "minio-config"
   useInternalServerUrl: false
-  # ✅ CORRECTED: Node selector and tolerations for backend nodes
   nodeSelector:
     "node-role": "osdu-backend"
   tolerations:
@@ -149,7 +146,6 @@ rabbitmq:
     # log level setup
     log.connection.level = error
     log.default.level = error
-  # ✅ CORRECTED: Node selector and tolerations for backend nodes
   nodeSelector:
     "node-role": "osdu-backend"
   tolerations:
@@ -173,7 +169,6 @@ postgresql:
       size: "20Gi"
       storageClass: "gp2"
     resourcesPreset: "medium"
-  # ✅ CORRECTED: Node selector and tolerations for backend nodes
   nodeSelector:
     "node-role": "osdu-backend"
   tolerations:
@@ -208,7 +203,6 @@ elasticsearch:
       storageClass: "gp2"
   ingest:
     replicas: "0"
-  # ✅ CORRECTED: Node selector and tolerations for backend nodes
   nodeSelector:
     "node-role": "osdu-backend"
   tolerations:
@@ -235,7 +229,6 @@ keycloak:
     existingSecretUserKey: "KEYCLOAK_DATABASE_USER"
     existingSecretDatabaseKey: "KEYCLOAK_DATABASE_NAME"
   proxy: "none"
-  # ✅ CORRECTED: Node selector and tolerations for Istio nodes
   nodeSelector:
     "node-role": "osdu-istio-keycloak"
   tolerations:
@@ -246,6 +239,15 @@ keycloak:
 
 # Bootstrap Configuration
 bootstrap:
+  # ✅ NEW: Add node scheduling for bootstrap components
+  nodeSelector:
+    "node-role": "osdu-istio-keycloak"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-istio-keycloak"
+      effect: "NoSchedule"
+  
   airflow:
     dagImages:
       csv_parser: "community.opengroup.org:5555/osdu/platform/data-flow/ingestion/csv-parser/csv-parser/gc-csv-parser:v0.27.0"
@@ -392,15 +394,31 @@ bootstrap:
 # Infrastructure Bootstrap
 gc_baremetal_infra_bootstrap:
   enabled: true
+  # ✅ NEW: Add node scheduling for bootstrap infrastructure
+  nodeSelector:
+    "node-role": "osdu-istio-keycloak"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-istio-keycloak"
+      effect: "NoSchedule"
 
 rabbitmq_bootstrap:
   enabled: true
+  # ✅ NEW: Add node scheduling for RabbitMQ bootstrap
+  nodeSelector:
+    "node-role": "osdu-istio-keycloak"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-istio-keycloak"
+      effect: "NoSchedule"
   data:
     rabbitmqHost: "rabbitmq"
     rabbitmqVhost: "/"
     bootstrapServiceAccountName: "bootstrap-sa"
 
-# Google Cloud Platform Bootstrap (Disabled for Baremetal)
+# Google Cloud Platform Bootstrap ( Disabled for Baremetal)
 gc_infra_bootstrap:
   enabled: false
   data:
@@ -419,6 +437,14 @@ gc_infra_bootstrap:
 # OSDU Microservices Deployment
 gc_entitlements_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     bootstrapServiceAccountName: "bootstrap-sa"
     adminUserEmail: "osdu-admin@service.local"
@@ -426,14 +452,38 @@ gc_entitlements_deploy:
 
 gc_config_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc-crs-catalog-deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     serviceAccountName: "crs-catalog"
 
 gc_dataset_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     serviceAccountName: "dataset"
   conf:
@@ -441,9 +491,25 @@ gc_dataset_deploy:
 
 gc-crs-conversion-deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_partition_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     policyServiceEnabled: "true"
     edsEnabled: "false"
@@ -452,21 +518,53 @@ gc_partition_deploy:
 
 gc_policy_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     bucketName: "refi-opa-policies"
     bootstrapServiceAccountName: "bootstrap-sa"
 
 gc_storage_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     bootstrapServiceAccountName: "bootstrap-sa"
     opaEnabled: true
 
 gc_unit_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_register_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     serviceAccountName: "register"
   conf:
@@ -476,23 +574,63 @@ gc_register_deploy:
 
 gc_notification_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_well_delivery_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_workflow_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     sharedTenantName: "osdu"
     bootstrapServiceAccountName: "bootstrap-sa"
 
 gc_file_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     serviceAccountName: "file"
 
 gc_schema_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     bootstrapServiceAccountName: "bootstrap-sa"
   conf:
@@ -503,16 +641,40 @@ gc_schema_deploy:
 
 gc_search_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     servicePolicyEnabled: true
 
 gc_seismic_store_sdms_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     redisDdmsHost: "redis-ddms"
 
 gc_indexer_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   conf:
     elasticSecretName: "indexer-elastic-secret"
     keycloakSecretName: "indexer-keycloak-secret"
@@ -523,6 +685,14 @@ gc_legal_deploy:
 
 core_legal_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
   data:
     cronJobServiceAccountName: "bootstrap-sa"
 
@@ -533,15 +703,47 @@ legal:
 
 gc_wellbore_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_wellbore_worker_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_secret_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_eds_dms_deploy:
   enabled: true
+  # ✅ NEW: Add node scheduling
+  nodeSelector:
+    "node-role": "osdu-backend"
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "osdu-backend"
+      effect: "NoSchedule"
 
 gc_oetp_client_deploy:
   enabled: false
