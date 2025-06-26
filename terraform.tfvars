@@ -34,7 +34,7 @@ tags = {
 
 
 eks_version      = "1.32" 
-instance_type    = "t3.xlarge"
+instance_type    = "m5.2xlarge"
 disk_size        = 20
 region           = "us-east-1"
 
