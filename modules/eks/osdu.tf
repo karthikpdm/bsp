@@ -70,7 +70,7 @@ resource "helm_release" "osdu_baremetal" {
   # This reads your custom-values.yaml file
   # Use the custom-values.yaml file from the same directory as this tf file
   values = [
-    file("${path.module}/helm_osdu/custom-values.yaml")
+    file("${path.module}/helm_osdu/custom-value.yaml")
   ]
 
 }
