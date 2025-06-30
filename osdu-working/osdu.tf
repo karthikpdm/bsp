@@ -36,6 +36,13 @@ resource "helm_release" "osdu-ir-install" {
   recreate_pods    = false
   reset_values     = false
   reuse_values     = true
+
+# # Keep only these safe parameters:
+#   wait           = true
+#   wait_for_jobs  = true
+#   timeout        = 600
+
+
   lifecycle {
     ignore_changes = [description]
   }
