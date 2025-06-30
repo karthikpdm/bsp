@@ -29,6 +29,13 @@ resource "helm_release" "osdu-ir-install" {
   chart     = "${path.module}/charts/osdu-gc-baremetal-0.27.2.tgz"
   version   = "0.27.2"
   namespace = "default"
+
+   # Add these parameters to handle existing releases
+  replace          = true
+  force_update     = true
+  recreate_pods    = false
+  reset_values     = false
+  reuse_values     = true
   lifecycle {
     ignore_changes = [description]
   }
