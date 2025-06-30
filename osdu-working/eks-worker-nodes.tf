@@ -157,6 +157,7 @@ resource "aws_eks_node_group" "osdu_ir_frontend_node" {
   }
 
   instance_types = [var.instance_type]
+  disk_size = 20
 
   ami_type      = "AL2_x86_64"
   capacity_type = "ON_DEMAND"
