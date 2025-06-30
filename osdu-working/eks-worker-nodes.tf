@@ -140,7 +140,7 @@ resource "aws_eks_node_group" "osdu_ir_backend_node" {
   ]
 }
 
-# Creation of the EC2 instance for hosting OSDU Microservices + Airflow + Redis
+# ✅ OPTIMIZED: Creation of the EC2 instance for hosting OSDU Microservices + Airflow + Redis (UNTAINTED)
 resource "aws_eks_node_group" "osdu_ir_frontend_node" {
   cluster_name    = aws_eks_cluster.osdu-ir-eks-cluster.name
   node_group_name = "osdu-ir-frontend-worker-node"
@@ -169,12 +169,8 @@ resource "aws_eks_node_group" "osdu_ir_frontend_node" {
     "compute-optimized" = "true"
   }
 
-  # Add taints for frontend workloads
-  taint {
-    key    = "node-role"
-    value  = "osdu-frontend"
-    effect = "NO_SCHEDULE"
-  }
+  # ✅ OPTIMIZED: No taints on frontend nodes - allows flexible scheduling for all OSDU microservices
+  # This ensures OSDU microservices can schedule here without needing specific tolerations
 
   tags = {
     Name                                        = "osdu-ir-frontend-worker-node"
@@ -187,6 +183,40 @@ resource "aws_eks_node_group" "osdu_ir_frontend_node" {
     aws_iam_role_policy_attachment.osdu-ir-eks-cni-policy-attach,
     aws_iam_role_policy_attachment.osdu-ir-eks-registry-policy-attach
   ]
+}
+
+# ✅ OPTIMIZED: Updated labeling for Frontend nodes (NO TAINTS APPLIED)
+resource "null_resource" "label_and_taint_frontend_nodes" {
+  depends_on = [
+    aws_eks_node_group.osdu_ir_frontend_node
+  ]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      #!/bin/bash
+      set -e
+      
+      echo "Updating kubeconfig..."
+      aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
+      
+      echo "Getting frontend nodes..."
+      nodes=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-frontend-worker-node -o jsonpath="{.items[*].metadata.name}")
+      
+      if [ -n "$nodes" ]; then
+        for node in $nodes; do
+          echo "Labeling node (NO TAINTS): $node"
+          kubectl label node $node node-role=osdu-frontend --overwrite
+          # ✅ OPTIMIZED: Removing any existing taints to ensure untainted state
+          kubectl taint node $node node-role=osdu-frontend:NoSchedule- || true
+        done
+        echo "Frontend nodes labeled successfully (untainted for flexible scheduling)"
+      else
+        echo "No frontend nodes found"
+      fi
+    EOT
+    
+    interpreter = ["/bin/bash", "-c"]
+  }
 }
 
 # Linux-compatible labeling for Istio nodes (backup/verification)
@@ -248,39 +278,6 @@ resource "null_resource" "label_and_taint_backend_nodes" {
         echo "Backend nodes labeled and tainted successfully"
       else
         echo "No backend nodes found"
-      fi
-    EOT
-    
-    interpreter = ["/bin/bash", "-c"]
-  }
-}
-
-# Linux-compatible labeling for Frontend nodes (backup/verification)
-resource "null_resource" "label_and_taint_frontend_nodes" {
-  depends_on = [
-    aws_eks_node_group.osdu_ir_frontend_node
-  ]
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      #!/bin/bash
-      set -e
-      
-      echo "Updating kubeconfig..."
-      aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
-      
-      echo "Getting frontend nodes..."
-      nodes=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-frontend-worker-node -o jsonpath="{.items[*].metadata.name}")
-      
-      if [ -n "$nodes" ]; then
-        for node in $nodes; do
-          echo "Labeling and tainting node: $node"
-          kubectl label node $node node-role=osdu-frontend --overwrite
-          kubectl taint node $node node-role=osdu-frontend:NoSchedule --overwrite || true
-        done
-        echo "Frontend nodes labeled and tainted successfully"
-      else
-        echo "No frontend nodes found"
       fi
     EOT
     
