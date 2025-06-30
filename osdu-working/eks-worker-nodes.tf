@@ -43,7 +43,7 @@ output "osdu-ir-worker-node-arn" {
   value = aws_iam_role.osdu-ir-worker-node-role.arn
 }
 
-# Creation of the EC2 instance1 for hosting IStio + Keycloak
+# Creation of the EC2 instance for hosting Istio + Keycloak
 resource "aws_eks_node_group" "osdu_ir_istio_node" {
   cluster_name    = aws_eks_cluster.osdu-ir-eks-cluster.name
   node_group_name = "osdu-ir-istio-worker-node"
@@ -61,8 +61,22 @@ resource "aws_eks_node_group" "osdu_ir_istio_node" {
 
   instance_types = [var.instance_type]
 
-  ami_type      = "AL2_x86_64" # Or "BOTTLEROCKET_x86_64" if using Bottlerocket
-  capacity_type = "ON_DEMAND"  # Use "SPOT" if needed
+  ami_type      = "AL2_x86_64"
+  capacity_type = "ON_DEMAND"
+
+  # Add labels for node scheduling
+  labels = {
+    "node-role"     = "osdu-istio-keycloak"
+    "workload-type" = "istio"
+    "component"     = "service-mesh"
+  }
+
+  # Add taints to ensure only Istio/Keycloak pods run here
+  taint {
+    key    = "node-role"
+    value  = "osdu-istio-keycloak"
+    effect = "NO_SCHEDULE"
+  }
 
   tags = {
     Name                                        = "osdu-ir-istio-worker-node"
@@ -77,7 +91,7 @@ resource "aws_eks_node_group" "osdu_ir_istio_node" {
   ]
 }
 
-# Creation of the EC2 instance1 for hosting hosting minio + postgres + elasticsearch + RabbitMQ
+# Creation of the EC2 instance for hosting MinIO + PostgreSQL + Elasticsearch + RabbitMQ
 resource "aws_eks_node_group" "osdu_ir_backend_node" {
   cluster_name    = aws_eks_cluster.osdu-ir-eks-cluster.name
   node_group_name = "osdu-ir-backend-worker-node"
@@ -95,8 +109,23 @@ resource "aws_eks_node_group" "osdu_ir_backend_node" {
 
   instance_types = [var.instance_type]
 
-  ami_type      = "AL2_x86_64" # Or "BOTTLEROCKET_x86_64" if using Bottlerocket
-  capacity_type = "ON_DEMAND"  # Use "SPOT" if needed
+  ami_type      = "AL2_x86_64"
+  capacity_type = "ON_DEMAND"
+
+  # Add labels for node scheduling
+  labels = {
+    "node-role"         = "osdu-backend"
+    "workload-type"     = "database"
+    "component"         = "backend-services"
+    "storage-optimized" = "true"
+  }
+
+  # Add taints for backend workloads
+  taint {
+    key    = "node-role"
+    value  = "osdu-backend"
+    effect = "NO_SCHEDULE"
+  }
 
   tags = {
     Name                                        = "osdu-ir-backend-worker-node"
@@ -111,8 +140,7 @@ resource "aws_eks_node_group" "osdu_ir_backend_node" {
   ]
 }
 
-
-# Creation of the EC2 instance1 for hosting OSDU Microservices + Airflow + Redis
+# Creation of the EC2 instance for hosting OSDU Microservices + Airflow + Redis
 resource "aws_eks_node_group" "osdu_ir_frontend_node" {
   cluster_name    = aws_eks_cluster.osdu-ir-eks-cluster.name
   node_group_name = "osdu-ir-frontend-worker-node"
@@ -130,8 +158,23 @@ resource "aws_eks_node_group" "osdu_ir_frontend_node" {
 
   instance_types = [var.instance_type]
 
-  ami_type      = "AL2_x86_64" # Or "BOTTLEROCKET_x86_64" if using Bottlerocket
-  capacity_type = "ON_DEMAND"  # Use "SPOT" if needed
+  ami_type      = "AL2_x86_64"
+  capacity_type = "ON_DEMAND"
+
+  # Add labels for node scheduling
+  labels = {
+    "node-role"         = "osdu-frontend"
+    "workload-type"     = "microservices"
+    "component"         = "osdu-apis"
+    "compute-optimized" = "true"
+  }
+
+  # Add taints for frontend workloads
+  taint {
+    key    = "node-role"
+    value  = "osdu-frontend"
+    effect = "NO_SCHEDULE"
+  }
 
   tags = {
     Name                                        = "osdu-ir-frontend-worker-node"
@@ -146,59 +189,101 @@ resource "aws_eks_node_group" "osdu_ir_frontend_node" {
   ]
 }
 
-# Tainting the nodes for Istio
+# Linux-compatible labeling for Istio nodes (backup/verification)
 resource "null_resource" "label_and_taint_istio_keycloak_nodes" {
   depends_on = [
     aws_eks_node_group.osdu_ir_istio_node
   ]
 
   provisioner "local-exec" {
-    command     = <<EOT
-aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
-$nodes = kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-istio-worker-node -o jsonpath="{.items[*].metadata.name}"
-foreach ($node in $nodes.Split(" ")) {
-  Write-Host "Labeling node: $node"
-  kubectl label node $node node-role=osdu-istio-keycloak --overwrite
-}
-EOT
-    interpreter = ["PowerShell", "-Command"]
+    command = <<-EOT
+      #!/bin/bash
+      set -e
+      
+      echo "Updating kubeconfig..."
+      aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
+      
+      echo "Getting Istio nodes..."
+      nodes=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-istio-worker-node -o jsonpath="{.items[*].metadata.name}")
+      
+      if [ -n "$nodes" ]; then
+        for node in $nodes; do
+          echo "Labeling and tainting node: $node"
+          kubectl label node $node node-role=osdu-istio-keycloak --overwrite
+          kubectl taint node $node node-role=osdu-istio-keycloak:NoSchedule --overwrite || true
+        done
+        echo "Istio nodes labeled and tainted successfully"
+      else
+        echo "No Istio nodes found"
+      fi
+    EOT
+    
+    interpreter = ["/bin/bash", "-c"]
   }
 }
 
-# Tainting the nodes for Backend
+# Linux-compatible labeling for Backend nodes (backup/verification)
 resource "null_resource" "label_and_taint_backend_nodes" {
   depends_on = [
     aws_eks_node_group.osdu_ir_backend_node
   ]
 
   provisioner "local-exec" {
-    command     = <<EOT
-aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
-$nodes = kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-backend-worker-node -o jsonpath="{.items[*].metadata.name}"
-foreach ($node in $nodes.Split(" ")) {
-  Write-Host "Labeling node: $node"
-  kubectl label node $node node-role=osdu-backend --overwrite
-}
-EOT
-    interpreter = ["PowerShell", "-Command"]
+    command = <<-EOT
+      #!/bin/bash
+      set -e
+      
+      echo "Updating kubeconfig..."
+      aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
+      
+      echo "Getting backend nodes..."
+      nodes=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-backend-worker-node -o jsonpath="{.items[*].metadata.name}")
+      
+      if [ -n "$nodes" ]; then
+        for node in $nodes; do
+          echo "Labeling and tainting node: $node"
+          kubectl label node $node node-role=osdu-backend --overwrite
+          kubectl taint node $node node-role=osdu-backend:NoSchedule --overwrite || true
+        done
+        echo "Backend nodes labeled and tainted successfully"
+      else
+        echo "No backend nodes found"
+      fi
+    EOT
+    
+    interpreter = ["/bin/bash", "-c"]
   }
 }
 
-# Tainting the nodes for Frontend
+# Linux-compatible labeling for Frontend nodes (backup/verification)
 resource "null_resource" "label_and_taint_frontend_nodes" {
   depends_on = [
     aws_eks_node_group.osdu_ir_frontend_node
   ]
 
   provisioner "local-exec" {
-    command     = <<EOT
-aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
-$nodes = kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-frontend-worker-node -o jsonpath="{.items[*].metadata.name}"
-foreach ($node in $nodes.Split(" ")) {
-  Write-Host "Labeling node: $node"
-  kubectl label node $node node-role=osdu-frontend --overwrite
-}
-EOT
-    interpreter = ["PowerShell", "-Command"]
+    command = <<-EOT
+      #!/bin/bash
+      set -e
+      
+      echo "Updating kubeconfig..."
+      aws eks update-kubeconfig --region us-east-1 --name osdu-ir-eks-cluster
+      
+      echo "Getting frontend nodes..."
+      nodes=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=osdu-ir-frontend-worker-node -o jsonpath="{.items[*].metadata.name}")
+      
+      if [ -n "$nodes" ]; then
+        for node in $nodes; do
+          echo "Labeling and tainting node: $node"
+          kubectl label node $node node-role=osdu-frontend --overwrite
+          kubectl taint node $node node-role=osdu-frontend:NoSchedule --overwrite || true
+        done
+        echo "Frontend nodes labeled and tainted successfully"
+      else
+        echo "No frontend nodes found"
+      fi
+    EOT
+    
+    interpreter = ["/bin/bash", "-c"]
   }
 }
