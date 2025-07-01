@@ -620,6 +620,77 @@ resource "helm_release" "osdu-ir-install" {
         }
       }
 
+      # ✅ ADDED: Specific bootstrap component overrides for correct scheduling
+      # ✅ BACKEND NODE: PostgreSQL bootstrap
+      postgres_bootstrap = {
+        enabled = true
+        nodeSelector = {
+          "node-role" = "osdu-backend"
+        }
+        tolerations = [
+          {
+            key      = "node-role"
+            operator = "Equal"
+            value    = "osdu-backend"
+            effect   = "NoSchedule"
+          }
+        ]
+      }
+
+      # ✅ BACKEND NODE: MinIO bootstrap
+      minio_bootstrap = {
+        enabled = true
+        nodeSelector = {
+          "node-role" = "osdu-backend"
+        }
+        tolerations = [
+          {
+            key      = "node-role"
+            operator = "Equal"
+            value    = "osdu-backend"
+            effect   = "NoSchedule"
+          }
+        ]
+      }
+
+      # ✅ BACKEND NODE: Elasticsearch bootstrap
+      elastic_bootstrap = {
+        enabled = true
+        nodeSelector = {
+          "node-role" = "osdu-backend"
+        }
+        tolerations = [
+          {
+            key      = "node-role"
+            operator = "Equal"
+            value    = "osdu-backend"
+            effect   = "NoSchedule"
+          }
+        ]
+      }
+
+      # ✅ ISTIO NODE: Keycloak bootstrap
+      keycloak_bootstrap = {
+        enabled = true
+        nodeSelector = {
+          "node-role" = "osdu-istio-keycloak"
+        }
+        tolerations = [
+          {
+            key      = "node-role"
+            operator = "Equal"
+            value    = "osdu-istio-keycloak"
+            effect   = "NoSchedule"
+          }
+        ]
+      }
+
+      # ✅ FRONTEND NODE: Airflow bootstrap (no nodeSelector = flexible scheduling)
+      airflow_bootstrap = {
+        enabled = true
+        # ✅ NO nodeSelector = will schedule on available frontend nodes
+      }
+
       # This entire block is not required because these are Google Cloud Platform related params
       gc_infra_bootstrap = {
         enabled = false
