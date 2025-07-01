@@ -359,12 +359,12 @@ resource "aws_grafana_workspace" "osdu_grafana" {
 # 4. KUBERNETES PROVIDER CONFIGURATION
 # ----------------------------------------
 
-# Configure Kubernetes provider using existing cluster
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.osdu_cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.osdu_cluster.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.osdu_cluster.token
-}
+# # Configure Kubernetes provider using existing cluster
+# provider "kubernetes" {
+#   host                   = data.aws_eks_cluster.osdu_cluster.endpoint
+#   cluster_ca_certificate = base64decode(data.aws_eks_cluster.osdu_cluster.certificate_authority[0].data)
+#   token                  = data.aws_eks_cluster_auth.osdu_cluster.token
+# }
 
 # ----------------------------------------
 # 5. KUBERNETES NAMESPACES
