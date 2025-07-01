@@ -1,3 +1,19 @@
+# ----------------------------------------
+# Data Sources (reference existing resources)
+# ----------------------------------------
+data "aws_caller_identity" "current" {}
+
+# Reference your existing EKS cluster
+data "aws_eks_cluster" "osdu_cluster" {
+  name = aws_eks_cluster.osdu-ir-eks-cluster.name
+  depends_on = [aws_eks_cluster.osdu-ir-eks-cluster]
+}
+
+data "aws_eks_cluster_auth" "osdu_cluster" {
+  name = aws_eks_cluster.osdu-ir-eks-cluster.name
+  depends_on = [aws_eks_cluster.osdu-ir-eks-cluster]
+}
+
 # Get OIDC provider from existing cluster
 data "tls_certificate" "cluster_oidc_cert" {
   url = aws_eks_cluster.osdu-ir-eks-cluster.identity[0].oidc[0].issuer
@@ -7,21 +23,8 @@ data "tls_certificate" "cluster_oidc_cert" {
 # OIDC Provider (create if not exists)
 # ----------------------------------------
 
-# Try to find existing OIDC provider first
-data "aws_iam_openid_connect_provider" "existing_oidc" {
-  count = 1
-  url   = aws_eks_cluster.osdu-ir-eks-cluster.identity[0].oidc[0].issuer
-  
-  # This will fail if OIDC provider doesn't exist - that's expected
-#   lifecycle {
-#     ignore_changes = all
-#   }
-}
-
-# Create OIDC provider only if it doesn't exist
+# Create OIDC provider 
 resource "aws_iam_openid_connect_provider" "cluster_oidc" {
-  count = length(data.aws_iam_openid_connect_provider.existing_oidc) == 0 ? 1 : 0
-  
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.cluster_oidc_cert.certificates[0].sha1_fingerprint]
   url             = aws_eks_cluster.osdu-ir-eks-cluster.identity[0].oidc[0].issuer
@@ -32,6 +35,11 @@ resource "aws_iam_openid_connect_provider" "cluster_oidc" {
     },
     var.monitoring_tags
   )
+
+  # Prevent recreation if provider already exists
+  lifecycle {
+    ignore_changes = [thumbprint_list]
+  }
 }
 
 # ----------------------------------------
@@ -71,9 +79,9 @@ resource "aws_prometheus_workspace" "osdu_prometheus" {
 # 2. IAM ROLES AND POLICIES FOR MONITORING
 # ----------------------------------------
 
-# Get OIDC provider ARN
+# Get OIDC provider details
 locals {
-  oidc_provider_arn = length(data.aws_iam_openid_connect_providers.cluster_oidc.arns) > 0 ? data.aws_iam_openid_connect_providers.cluster_oidc.arns[0] : aws_iam_openid_connect_provider.cluster_oidc[0].arn
+  oidc_provider_arn = aws_iam_openid_connect_provider.cluster_oidc.arn
   oidc_provider_url = replace(aws_eks_cluster.osdu-ir-eks-cluster.identity[0].oidc[0].issuer, "https://", "")
 }
 
@@ -352,12 +360,12 @@ resource "aws_grafana_workspace" "osdu_grafana" {
 # 4. KUBERNETES PROVIDER CONFIGURATION
 # ----------------------------------------
 
-# # Configure Kubernetes provider using existing cluster
-# provider "kubernetes" {
-#   host                   = data.aws_eks_cluster.osdu_cluster.endpoint
-#   cluster_ca_certificate = base64decode(data.aws_eks_cluster.osdu_cluster.certificate_authority[0].data)
-#   token                  = data.aws_eks_cluster_auth.osdu_cluster.token
-# }
+# Configure Kubernetes provider using existing cluster
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.osdu_cluster.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.osdu_cluster.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.osdu_cluster.token
+}
 
 # ----------------------------------------
 # 5. KUBERNETES NAMESPACES
