@@ -50,18 +50,6 @@ data "tls_certificate" "cluster_oidc_cert" {
 # ----------------------------------------
 # 2. VARIABLES DEFINITION
 # ----------------------------------------
-variable "region" {
-  type        = string
-  description = "Region"
-  default     = "us-east-1"
-}
-
-
-variable "cluster_name" {
-  type        = string
-  description = "The EKS cluster name"
-  default     = "osdu-ir-eks-cluster"
-}
 
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
@@ -396,12 +384,12 @@ resource "aws_grafana_workspace_api_key" "main" {
 # 11. KUBERNETES RESOURCES FOR METRICS COLLECTION
 # ----------------------------------------
 
-# Kubernetes provider configuration
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.osdu_cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.osdu_cluster.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.osdu_cluster.token
-}
+# # Kubernetes provider configuration
+# provider "kubernetes" {
+#   host                   = data.aws_eks_cluster.osdu_cluster.endpoint
+#   cluster_ca_certificate = base64decode(data.aws_eks_cluster.osdu_cluster.certificate_authority[0].data)
+#   token                  = data.aws_eks_cluster_auth.osdu_cluster.token
+# }
 
 # Create namespace for ADOT collector
 resource "kubernetes_namespace" "adot_collector" {
