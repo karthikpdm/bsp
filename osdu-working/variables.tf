@@ -64,30 +64,31 @@ variable "key_pair_name" {
 # ----------------------------------------
 # Variables (add these to your existing variables.tf)
 # ----------------------------------------
-variable "grafana_admin_email" {
-  description = "Admin email for Grafana workspace and alert notifications"
-  type        = string
-  default     = "karthik.bm@trianz.com"
-}
+# variable "grafana_admin_email" {
+#   description = "Admin email for Grafana workspace and alert notifications"
+#   type        = string
+#   default     = "karthik.bm@trianz.com"
+# }
 
-variable "enable_cloudwatch_insights" {
-  description = "Enable CloudWatch Container Insights"
-  type        = bool
-  default     = true
-}
 
-variable "prometheus_retention_days" {
-  description = "Prometheus data retention in days"
-  type        = number
-  default     = 150
-}
+# variable "enable_cloudwatch_insights" {
+#   description = "Enable CloudWatch Container Insights"
+#   type        = bool
+#   default     = true
+# }
 
-variable "monitoring_tags" {
-  description = "Additional tags for monitoring resources"
-  type        = map(string)
-  default = {
-    Component = "monitoring"
-    ManagedBy = "terraform"
-  }
-}
+# variable "prometheus_retention_days" {
+#   description = "Prometheus data retention in days"
+#   type        = number
+#   default     = 150
+# }
+
+# variable "monitoring_tags" {
+#   description = "Additional tags for monitoring resources"
+#   type        = map(string)
+#   default = {
+#     Component = "monitoring"
+#     ManagedBy = "terraform"
+#   }
+# }
 
