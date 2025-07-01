@@ -1,29 +1,26 @@
-# ----------------------------------------
-# Data Sources (reference existing resources)
-# ----------------------------------------
-data "aws_caller_identity" "current" {}
-
-# Reference your existing EKS cluster
-data "aws_eks_cluster" "osdu_cluster" {
-  name = aws_eks_cluster.osdu-ir-eks-cluster.name
-  depends_on = [aws_eks_cluster.osdu-ir-eks-cluster]
-}
-
-data "aws_eks_cluster_auth" "osdu_cluster" {
-  name = aws_eks_cluster.osdu-ir-eks-cluster.name
-  depends_on = [aws_eks_cluster.osdu-ir-eks-cluster]
-}
-
 # Get OIDC provider from existing cluster
 data "tls_certificate" "cluster_oidc_cert" {
   url = aws_eks_cluster.osdu-ir-eks-cluster.identity[0].oidc[0].issuer
 }
 
 # ----------------------------------------
-# OIDC Provider (if not already created)
+# OIDC Provider (create if not exists)
 # ----------------------------------------
+
+# Try to find existing OIDC provider first
+data "aws_iam_openid_connect_provider" "existing_oidc" {
+  count = 1
+  url   = aws_eks_cluster.osdu-ir-eks-cluster.identity[0].oidc[0].issuer
+  
+  # This will fail if OIDC provider doesn't exist - that's expected
+#   lifecycle {
+#     ignore_changes = all
+#   }
+}
+
+# Create OIDC provider only if it doesn't exist
 resource "aws_iam_openid_connect_provider" "cluster_oidc" {
-  count = length(data.aws_iam_openid_connect_providers.cluster_oidc.arns) == 0 ? 1 : 0
+  count = length(data.aws_iam_openid_connect_provider.existing_oidc) == 0 ? 1 : 0
   
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.cluster_oidc_cert.certificates[0].sha1_fingerprint]
@@ -35,10 +32,6 @@ resource "aws_iam_openid_connect_provider" "cluster_oidc" {
     },
     var.monitoring_tags
   )
-}
-
-data "aws_iam_openid_connect_providers" "cluster_oidc" {
-  url = aws_eks_cluster.osdu-ir-eks-cluster.identity[0].oidc[0].issuer
 }
 
 # ----------------------------------------
