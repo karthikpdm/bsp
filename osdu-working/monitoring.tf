@@ -164,9 +164,9 @@ resource "aws_iam_role" "adot_collector_role" {
             "${local.oidc_provider_url}:aud" = "sts.amazonaws.com"
           }
         }
-        Principal = {
-          Federated = aws_iam_openid_connect_provider.eks_oidc.arn
-        }
+        # Principal = {
+        #   Federated = aws_iam_openid_connect_provider.eks_oidc.arn
+        # }
       }
     ]
   })
