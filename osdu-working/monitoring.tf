@@ -103,19 +103,19 @@ locals {
 # ----------------------------------------
 
 # Create OIDC provider for EKS (if it doesn't exist)
-resource "aws_iam_openid_connect_provider" "eks_oidc" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.cluster_oidc_cert.certificates[0].sha1_fingerprint]
-  url             = data.aws_eks_cluster.osdu_cluster.identity[0].oidc[0].issuer
+# resource "aws_iam_openid_connect_provider" "eks_oidc" {
+#   client_id_list  = ["sts.amazonaws.com"]
+#   thumbprint_list = [data.tls_certificate.cluster_oidc_cert.certificates[0].sha1_fingerprint]
+#   url             = data.aws_eks_cluster.osdu_cluster.identity[0].oidc[0].issuer
 
-  tags = merge(local.common_tags, {
-    Name = "${var.cluster_name}-oidc-provider"
-  })
+#   tags = merge(local.common_tags, {
+#     Name = "${var.cluster_name}-oidc-provider"
+#   })
 
-  lifecycle {
-    ignore_changes = [thumbprint_list]
-  }
-}
+#   lifecycle {
+#     ignore_changes = [thumbprint_list]
+#   }
+# }
 
 # ----------------------------------------
 # 5. AMAZON MANAGED PROMETHEUS (AMP)
