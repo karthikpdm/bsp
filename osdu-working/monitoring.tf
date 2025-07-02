@@ -47,6 +47,12 @@ data "tls_certificate" "cluster_oidc_cert" {
   url = data.aws_eks_cluster.osdu_cluster.identity[0].oidc[0].issuer
 }
 
+
+
+# Reference existing OIDC provider (don't create a new one)
+data "aws_iam_openid_connect_provider" "existing_oidc" {
+  url = data.aws_eks_cluster.osdu_cluster.identity[0].oidc[0].issuer
+}
 # ----------------------------------------
 # 2. VARIABLES DEFINITION
 # ----------------------------------------
@@ -88,6 +94,7 @@ variable "tags" {
 locals {
   common_tags = merge(
     {
+      Environment = var.environment
       Project     = "OSDU-EKS-Monitoring"
       ManagedBy   = "Terraform"
       Component   = "Monitoring"
@@ -95,6 +102,8 @@ locals {
     var.tags
   )
   
+  # Use the existing OIDC provider
+  oidc_provider_arn = data.aws_iam_openid_connect_provider.existing_oidc.arn
   oidc_provider_url = replace(data.aws_eks_cluster.osdu_cluster.identity[0].oidc[0].issuer, "https://", "")
 }
 
